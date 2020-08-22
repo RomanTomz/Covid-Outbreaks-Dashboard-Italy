@@ -17,7 +17,7 @@ st.title('Analisi Focolai Covid 19')
 url_p = 'https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-province.json'
 url_r = 'https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv'
 
-@st.cache(persist=True)
+@st.cache(persist=True, allow_output_mutation=True)
 def load_data_p():
     data_p = pd.read_json(url_p)
     data_p['data'] = pd.to_datetime(data_p['data'])
@@ -65,6 +65,7 @@ indice = indice[['Indice di Positivitá']].style.background_gradient(cmap='Reds'
 
 # Geo Data import and preparation
     #Province
+@st.cache(persist=True, allow_output_mutation=True)
 def load_geo_p():
     with urlopen('https://gist.githubusercontent.com/datajournalism-it/212e7134625fbee6f9f7/raw/dabd071fe607f5210921f138ad3c7276e3841166/province.geojson') as response:
         province = json.load(response)
@@ -76,6 +77,7 @@ for feature in province_geo['features']:
   feature['id'] = feature['properties']['NOME_PRO']
 
     #Regioni
+@st.cache(persist=True, allow_output_mutation=True)
 def load_geo_r():
     with urlopen('https://gist.githubusercontent.com/datajournalism-it/48e29e7c87dca7eb1d29/raw/2636aeef92ba0770a073424853f37690064eb0ea/regioni.geojson') as response:
         regjson = json.load(response)
