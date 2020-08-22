@@ -123,7 +123,7 @@ fig_osp = go.Figure(go.Choroplethmapbox(geojson=regioni_geo, locations=reg_lates
                                     marker_opacity=0.5, marker_line_width=0.6))
 fig_osp.update_layout(mapbox_style="carto-positron",
                   mapbox_zoom=4, mapbox_center = {"lat": 41.8719, "lon": 12.5674})
-fig_osp.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+fig_osp.update_layout(margin={"r":0,"t":20,"l":0,"b":0})
 
 #Indice Positivi
 extremum_3 = max(np.max(reg_latest.indice_pos), np.abs(np.min(reg_latest.indice_pos)))
