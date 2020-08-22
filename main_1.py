@@ -11,7 +11,7 @@ import json
 from urllib.request import urlopen
 
 
-st.title('Analisi Nuovi Focolai Covid 19')
+st.title('Analisi Focolai Covid 19')
 
 
 url_p = 'https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-province.json'
@@ -86,7 +86,7 @@ regioni_geo = load_geo_r()
 for feature in regioni_geo['features']:
   feature['id'] = feature['properties']['NOME_REG']
 
-
+#Data Prep per tabelle
 top5_mm.rename(columns={'denominazione_provincia':'Provincia', 'media_mobile':'Crescita % Media Mobile 7gg'}, inplace=True)
 top5_nc7.rename(columns={'denominazione_provincia':'Provincia', 'nuovi_casi_7gg':'Nuovi Casi in 7gg'}, inplace=True)
 top5_mm.set_index('Provincia', inplace=True)
@@ -99,7 +99,7 @@ formatter_nc7 = top5_nc7[['Nuovi Casi in 7gg']].style.background_gradient(cmap='
 
 # Mappa nuovi casi
 fig_geo_7 = go.Figure(go.Choroplethmapbox(geojson=province_geo, locations=data_p.denominazione_provincia, z=data_p.nuovi_casi_7gg,
-                                    colorscale="Reds", zmin=0, zmax=200,
+                                    colorscale="Reds", zmin=0, zmax=400,
                                     marker_opacity=0.5, marker_line_width=0.6))
 fig_geo_7.update_layout(mapbox_style="carto-positron",
                   mapbox_zoom=4, mapbox_center = {"lat": 41.8719, "lon": 12.5674})
@@ -170,7 +170,12 @@ st.sidebar.markdown(
 
 )
 
-st.sidebar.markdown("#### L'indice di positivitá é ottenuto con: (nuovi_positivi_7gg/casi_testati_7gg)x100")
+st.sidebar.markdown("#### L'indice di positivitá é ottenuto con: **(nuovi_positivi_7gg/casi_testati_7gg)x100 **")
 
 st.sidebar.markdown("###### Dati da https://github.com/pcm-dpc/COVID-19 ")
 st.sidebar.button('Aggiorna Dati')
+
+st.sidebar.markdown('###### *Code:* https://github.com/RomanTomz/Covid-Outbreaks-Dashboard-Italy/tree/master')
+
+
+st.sidebar.markdown('###### *Sviluppata da: Tommaso Di Marcello - @TomZ_UK*' )
