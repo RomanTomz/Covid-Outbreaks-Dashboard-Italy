@@ -16,6 +16,7 @@ st.title('Analisi Focolai Covid 19')
 
 url_p = 'https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-json/dpc-covid19-ita-province.json'
 url_r = 'https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv'
+url_pop = 'https://raw.githubusercontent.com/RomanTomz/Covid-Outbreaks-Dashboard-Italy/master/popdf.csv'
 
 @st.cache(persist=True, allow_output_mutation=True)
 def load_data_p():
@@ -43,23 +44,31 @@ data_r = load_data_r()
 data_r['crescita_ospedalizzati_sett'] = data_r.groupby('denominazione_regione')['totale_ospedalizzati'].apply(lambda x : x.diff(periods=7))
 data_r['casi_testati_7gg'] = data_r.groupby('denominazione_regione')['casi_testati'].apply(lambda x: x.diff(periods=7))
 data_r['nuovi_pos_7gg'] = data_r.groupby('denominazione_regione')['nuovi_positivi'].apply(lambda x: x.diff(periods=7))
-data_r['indice_pos'] = (data_r.nuovi_pos_7gg/data_r.casi_testati_7gg).mul(100).round(2)
+data_r['positivi_mm'] = data_r.sort_values(by='data').groupby('denominazione_regione')['totale_casi'].apply(lambda x : (x.pct_change(periods=7)*100).round(2))
+
 reg_latest = data_r.set_index('data').sort_index().groupby('denominazione_regione').tail(1)
 
+@st.cache(persist=True, allow_output_mutation=True)
+def load_data_pop():
+    data_pop = pd.read_csv(url_pop, index_col='Regione')
+    return data_pop
+
+popdf = load_data_pop()
+
+reg_merged = reg_latest.merge(right=popdf, how='left', left_on=reg_latest.denominazione_regione, right_on=popdf.index)
+reg_merged['prevalenza'] = ((reg_merged.totale_positivi/reg_merged.Popolazioneresidenti)*100000).round(2)
+reg_merged['indice_rischio'] = (reg_merged.positivi_mm * reg_merged.prevalenza).round(2)
+reg_merged['rischio'] = pd.qcut(reg_merged.indice_rischio, q=4, labels=[1,2,3,4])
 
 
 
 
 top5_osp = reg_latest.set_index('denominazione_regione').sort_values(by='crescita_ospedalizzati_sett', ascending=False).head()
-indice = reg_latest.set_index('denominazione_regione').sort_values(by='indice_pos', ascending=False).head()
 
-indice.index.rename('Regione', inplace=True)
-indice.rename(columns={'indice_pos':'Indice di Positivitá'}, inplace=True)
 top5_osp.index.rename('Regione', inplace=True)
 top5_osp.rename(columns={'crescita_ospedalizzati_sett':'Incremento Ricoveri Negli Ultimi 7 gg'}, inplace=True)
 
 top5_osp = top5_osp[['Incremento Ricoveri Negli Ultimi 7 gg']].style.background_gradient(cmap='Reds', ).format('{0:,.0f}')
-indice = indice[['Indice di Positivitá']].style.background_gradient(cmap='Reds', ).format('{0:,.2f}')
 
 
 # Geo Data import and preparation
@@ -129,19 +138,19 @@ fig_osp.update_layout(mapbox_style="carto-positron",
                   mapbox_zoom=4, mapbox_center = {"lat": 41.8719, "lon": 12.5674})
 fig_osp.update_layout(margin={"r":0,"t":20,"l":0,"b":0})
 
-#Indice Positivi
-extremum_3 = max(np.max(reg_latest.indice_pos), np.abs(np.min(reg_latest.indice_pos)))
-fig_ind = go.Figure(go.Choroplethmapbox(geojson=regioni_geo, locations=reg_latest.denominazione_regione, z=reg_latest.indice_pos,
-                                    colorscale="Temps", zmin=-extremum_3,zmid=0, zmax=extremum_3,
-                                    marker_opacity=0.7, marker_line_width=0.6))
-fig_ind.update_layout(mapbox_style="carto-positron",
+#Indice Rischio Relativo
+fig_rischio = go.Figure(go.Choroplethmapbox(geojson=regioni_geo, locations=reg_merged.denominazione_regione, z=reg_merged.rischio,
+                                    colorscale="Pinkyl", zmin=1, zmax=4,
+                                    colorbar=dict(dtick=1),
+                                    marker_opacity=0.5, marker_line_width=0.6))
+fig_rischio.update_layout(mapbox_style="carto-positron",
                   mapbox_zoom=4, mapbox_center = {"lat": 41.8719, "lon": 12.5674})
-fig_ind.update_layout(margin={"r":0,"t":20,"l":0,"b":0})
+fig_rischio.update_layout(margin={"r":0,"t":20,"l":0,"b":0})
 
 
 st.sidebar.header('Tipo Visualizzazione')
 
-viz = st.sidebar.radio('Seleziona Visualizzazione',('Nuovi Casi 7 gg','Crescita %  in 7 gg','Incremento Ospedalizzati 7 gg (Regionale)','Indice Positivitá 7gg (Regionale)'))
+viz = st.sidebar.radio('Seleziona Visualizzazione',('Nuovi Casi 7 gg','Crescita %  in 7 gg','Incremento Ospedalizzati 7 gg (Regionale)', 'Indice Rischio Relativo (Regionale)'))
 
 
 if viz == 'Nuovi Casi 7 gg':
@@ -162,11 +171,11 @@ if viz == 'Incremento Ospedalizzati 7 gg (Regionale)':
         st.markdown('#### Crescita Ospedalizzati Negli Ultimi 7 Giorni - Visualizzazione Geografica')
         st.plotly_chart(fig_osp)
 
-if viz == 'Indice Positivitá 7gg (Regionale)':
-        st.markdown('#### Prime 5 Regioni per Indice di Positivitá Negli Ultimi 7 Giorni')
-        st.write(indice)
-        st.markdown('#### Indice di Positivitá a 7 Giorni - Visualizzazione Geografica')
-        st.plotly_chart(fig_ind)
+if viz == 'Indice Rischio Relativo (Regionale)':
+        st.markdown('#### Indice Rischio Relativo')
+        st.latex(" indice\ richio\ relativo: {(%\ Media\ Mobile\ 7gg)} \cdot {(Prevalenza\ per\ 100k)}")
+        st.markdown('#### IRR divide le regioni in 4 diverse zone di rischio: 1 = Moderato - 4 = Critico.' )
+        st.plotly_chart(fig_rischio)
 
 
 st.sidebar.markdown(
@@ -174,7 +183,6 @@ st.sidebar.markdown(
 
 )
 
-st.sidebar.markdown("#### L'indice di positivitá é ottenuto con:  **(nuovi_positivi_7gg/casi_testati_7gg)x100 ** ")
 
 st.sidebar.markdown("###### Dati da https://github.com/pcm-dpc/COVID-19 ")
 st.sidebar.button('Aggiorna Dati')
