@@ -173,7 +173,7 @@ if viz == 'Incremento Ospedalizzati 7 gg (Regionale)':
 
 if viz == 'Indice Rischio Relativo (Regionale)':
         st.markdown('#### Indice Rischio Relativo')
-        st.latex(" indice\ richio\ relativo: {(%\ Media\ Mobile\ 7gg)} \cdot {(Prevalenza\ per\ 100k)}")
+        st.latex(" indice\ richio\ relativo: {(Crescita\ Media\ Mobile\ 7gg)} \cdot {(Prevalenza\ per\ 100k)}")
         st.markdown('#### IRR divide le regioni in 4 diverse zone di rischio: 1 = Moderato - 4 = Critico.' )
         st.plotly_chart(fig_rischio)
 
