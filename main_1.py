@@ -37,7 +37,7 @@ top5_mm = prov_latest.sort_values('pct_crescita', ascending=False).head(5)
 # Data cleaning and preparation (regioni)
 @st.cache(persist=True, allow_output_mutation=True)
 def load_data_r():
-    data_r = pd.read_csv(url_r, parse_dates=True)
+    data_r = pd.read_csv(url_r, parse_dates=True, error_bad_lines=False)
     return data_r
 
 data_r = load_data_r()
